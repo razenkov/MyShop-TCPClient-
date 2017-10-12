@@ -7,6 +7,7 @@ using System.IO;
 
 namespace ClientOfMyShop
 {
+    [Serializable]
     class User
     {
         public string Name;

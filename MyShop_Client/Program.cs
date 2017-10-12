@@ -24,6 +24,11 @@ namespace ClientOfMyShop
 
             ClientSocket.Connect(endPoint);
 
+            if(ClientSocket == null)
+            {
+                Console.WriteLine("Server is not reacheble.");
+            }
+
 
             User CurrentUser = new User();//create temp user
 
@@ -32,32 +37,43 @@ namespace ClientOfMyShop
                 StreamReader sr = new StreamReader(@"C:\Users\adm1n\Documents\Visual Studio 2017\Projects\MyShop\ClientOfMyShop\Id.txt");
                 char[] buff = new char[512];
                 LocalId = sr.ReadLine().ToString();
+                Console.WriteLine("ID is not empty - ." + LocalId);
             }
-            catch { }
+            catch
+            {
+                Console.WriteLine("ID is empt.");
+
+            }
 
             if (LocalId != null)
             {
+                Console.WriteLine("(LocalId != null)");
                 Console.WriteLine("Start to restore your data. Welcome.");
-                BinaryRestoreId(CurrentUser);
+                CurrentUser.Id = LocalId;
                 //restore data from server by LocalId
+                ClientSocket.Send(SerializeObj(CurrentUser), 0, CurrentUser.Id.Length, 0);
+
             }
             else
             {
                 CurrentUser = RegistrateNewUser();
                 BinarySaveId(CurrentUser);
-                ClientSocket.Send(ConvertUserToByteArray(CurrentUser), 0, ConvertUserToByteArray(CurrentUser).Length, 0); //send new user to server
+                //ClientSocket.Send(ConvertUserToByteArray(CurrentUser), 0, ConvertUserToByteArray(CurrentUser).Length, 0); //send new user to server
 
 
             }
 
+            Console.WriteLine("Final User contain ID" + CurrentUser.Id);
+            Console.WriteLine("END of  if (LocalId != null)");
             //=============================START=================================================
 
+            
 
 
             while (true)
 
             {
-                Console.WriteLine("Enter msg: ");
+                Console.WriteLine("Enter msg to server: ");
 
                 string msg = Console.ReadLine();
 
@@ -71,7 +87,7 @@ namespace ClientOfMyShop
 
                 Array.Resize(ref buffer, recive);
 
-                Console.WriteLine("Resived: {0}", Encoding.Default.GetString(buffer));
+                Console.WriteLine("Resived from server : {0}", Encoding.Default.GetString(buffer));
 
 
             }
@@ -93,11 +109,30 @@ namespace ClientOfMyShop
         public static void BinaryRestoreId(User user)
         {
             Console.WriteLine("BinaryRestoreId");
-            string path = @"C:\Users\adm1n\Documents\Visual Studio 2017\Projects\MyShop\ClientOfMyShop\Id.txt";
+            //string path = @"C:\Users\adm1n\Documents\Visual Studio 2017\Projects\MyShop_Client\Id.txt";
 
-            BinaryReader br = new BinaryReader(File.Open(path, FileMode.OpenOrCreate));
-            user.Id = br.ReadString();
-            br.Close();
+
+            try
+            {
+                string path = @"C:\Users\adm1n\Documents\Visual Studio 2017\Projects\MyShop_Client\Id.txt";
+                char[] buff = new char[512];
+
+                BinaryReader br = new BinaryReader(File.Open(path, FileMode.Open));
+                user.Id = br.ReadString();
+                br.Close();
+                Console.WriteLine(user.Id + " is user ID");
+
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Client Id.txt file is not contain id");
+                User user2 = RegistrateNewUser();
+                
+            }
+
+            
+            Console.WriteLine("________________________END_______________________");
+
         }
 
         public static User RegistrateNewUser()
@@ -135,8 +170,7 @@ namespace ClientOfMyShop
         {
             User user = new User();
 
-            MemoryStream memStream = new MemoryStream();
-            BinaryFormatter binForm = new BinaryFormatter();
+            MemoryStream memStream = new MemoryStream();            BinaryFormatter binForm = new BinaryFormatter();
             memStream.Write(array, 0, array.Length);
             memStream.Seek(0, SeekOrigin.Begin);
             Object obj = (Object)binForm.Deserialize(memStream);
@@ -144,16 +178,42 @@ namespace ClientOfMyShop
             return user;
         }
 
+        public static byte[] SerializeObj(object obj)
+        {
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
+            {
+                System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                formatter.Serialize(stream, obj);
+
+                byte[] bytes = stream.ToArray();
+                stream.Flush();
+
+                return bytes;
+            }
+        }
+
         public static byte[] ConvertUserToByteArray(User user)
         {
             if (user == null)
+            {
+                Console.WriteLine("(user == null) into ConvertUserToByteArray(User user)");
                 return null;
-
+            }
             BinaryFormatter bf = new BinaryFormatter();
             MemoryStream ms = new MemoryStream();
             bf.Serialize(ms, user);
 
             return ms.ToArray();
+        }
+
+        public static object DeserializeObj(byte[] binaryObj)
+        {
+            using (System.IO.MemoryStream stream = new System.IO.MemoryStream(binaryObj))
+            {
+                stream.Position = 0;
+                object desObj = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
+                return desObj;
+            }
         }
 
         public static void UserDataRequest(string Id)
