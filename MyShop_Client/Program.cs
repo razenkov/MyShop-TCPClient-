@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using UserNamespace;
 
 namespace ClientOfMyShop
 {
@@ -20,7 +21,7 @@ namespace ClientOfMyShop
             Console.WriteLine("Client Starts;");
             Socket ClientSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("192.168.0.103"), 1080);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("192.168.0.104"), 1080);
 
             ClientSocket.Connect(endPoint);
 
@@ -47,11 +48,11 @@ namespace ClientOfMyShop
 
             if (LocalId != null)
             {
-                Console.WriteLine("(LocalId != null)");
-                Console.WriteLine("Start to restore your data. Welcome.");
+                
+                Console.WriteLine("Start to CurrentUser.Id = LocalId;.");
                 CurrentUser.Id = LocalId;
                 //restore data from server by LocalId
-                ClientSocket.Send(SerializeObj(CurrentUser), 0, CurrentUser.Id.Length, 0);
+                //ClientSocket.Send(SerializeObj(CurrentUser), 0, CurrentUser.Id.Length, 0);
 
             }
             else
@@ -67,8 +68,14 @@ namespace ClientOfMyShop
             Console.WriteLine("END of  if (LocalId != null)");
             //=============================START=================================================
 
-            
 
+            Console.WriteLine("Send USER to server");
+
+            ClientSocket.Send(SerializeObj(CurrentUser));
+            Console.WriteLine("ClientSocket.Send(SerializeObj(CurrentUser)); - ENDS");
+            Console.WriteLine(CurrentUser.Id);
+
+            Console.Read();
 
             while (true)
 
@@ -153,73 +160,42 @@ namespace ClientOfMyShop
             return newUser;
         }
 
-        public static byte[] ByteArrayToSend(User user)
-        {
-            if (user == null)
-                return null;
-
-            BinaryFormatter bf = new BinaryFormatter();
-            using (MemoryStream ms = new MemoryStream())
-            {
-                bf.Serialize(ms, user);
-                return ms.ToArray();
-            }
-        }
-
-        public static User ConvertByteArrayToUser(byte[] array)
-        {
-            User user = new User();
-
-            MemoryStream memStream = new MemoryStream();            BinaryFormatter binForm = new BinaryFormatter();
-            memStream.Write(array, 0, array.Length);
-            memStream.Seek(0, SeekOrigin.Begin);
-            Object obj = (Object)binForm.Deserialize(memStream);
-
-            return user;
-        }
-
+        //serialize
         public static byte[] SerializeObj(object obj)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("serialize");
             using (System.IO.MemoryStream stream = new System.IO.MemoryStream())
             {
                 System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
                 formatter.Serialize(stream, obj);
+                
 
                 byte[] bytes = stream.ToArray();
                 stream.Flush();
 
                 return bytes;
             }
+            Console.ForegroundColor = ConsoleColor.White;
+
         }
 
-        public static byte[] ConvertUserToByteArray(User user)
-        {
-            if (user == null)
-            {
-                Console.WriteLine("(user == null) into ConvertUserToByteArray(User user)");
-                return null;
-            }
-            BinaryFormatter bf = new BinaryFormatter();
-            MemoryStream ms = new MemoryStream();
-            bf.Serialize(ms, user);
-
-            return ms.ToArray();
-        }
-
+        //deserialize
         public static object DeserializeObj(byte[] binaryObj)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("deserialize");
             using (System.IO.MemoryStream stream = new System.IO.MemoryStream(binaryObj))
             {
                 stream.Position = 0;
                 object desObj = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter().Deserialize(stream);
                 return desObj;
             }
-        }
-
-        public static void UserDataRequest(string Id)
-        {
+            Console.ForegroundColor = ConsoleColor.White;
 
         }
+
+
 
     }
 }
